@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:gson/gson.dart';
 
 void main() => runApp(MyApp());
 
@@ -23,6 +25,41 @@ class RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
   final _saved = Set<WordPair>();
   final _biggerFont = const TextStyle(fontSize: 18.0);
+
+  void initState() {
+    super.initState();
+    _loadSavedItems();
+
+  }
+
+  // load saved items
+  _loadSavedItems() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      var _savedList = (prefs.getStringList("saved"));
+      
+      _savedList.forEach(
+          (str) {
+            var words = str.split(new RegExp(r"(?=[A-Z])"));
+            var wp = WordPair(words[0], words[1]);
+            _saved.add(wp);
+            _suggestions.insert(0, wp);
+            //_saved.add(str);
+          }
+      );
+      //_suggestions.addAll(_saved);
+
+    });
+  }
+
+  _saveSavedItems() async {
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      prefs.setStringList('saved', _saved.map((WordPair wordPairItem) => wordPairItem.asPascalCase).toList());
+    });
+  }
 
   Widget _buildSuggestions() {
     return ListView.builder(
@@ -56,6 +93,7 @@ class RandomWordsState extends State<RandomWords> {
           } else {
             _saved.add(pair);
           }
+          _saveSavedItems();
         });
       },
     );
